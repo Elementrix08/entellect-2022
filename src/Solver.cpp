@@ -3,6 +3,9 @@
 
 using namespace std;
 
+map<string, int> Solver::travelDifficulty = {
+    {"S", 1}, {"I", 5}, {"TS", 10}, {"M", 15}};
+
 Solver::Solver() {
     cin >> stepAllowance;
 

@@ -1,9 +1,15 @@
 #include "Point.h"
+#include <map>
 #include <vector>
 
 class Solver {
   private:
     const static int NUM_RESOURCES = 3;
+    const static int COAL_REWARD = 200;
+    const static int FISH_REWARD = 400;
+    const static int METAL_REWARD = 1000;
+
+    static std::map<std::string, int> travelDifficulty;
 
   public:
     int stepAllowance;
