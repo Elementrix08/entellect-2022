@@ -8,6 +8,7 @@ class Solver {
     const static int COAL_REWARD = 200;
     const static int FISH_REWARD = 400;
     const static int METAL_REWARD = 1000;
+    const static int ALLOWANCE_NUMERATOR = 150;
 
     static std::map<std::string, int> travelDifficulty;
 
@@ -27,7 +28,10 @@ class Solver {
 
     int numRows, numCols;
     std::vector<std::vector<std::string>> map;
+    std::vector<std::vector<int>> rewardMap;
 
     Solver();
+    void solve();
     void toString();
+    void printGrid(std::vector<std::vector<int>> &grid);
 };
