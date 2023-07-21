@@ -7,7 +7,7 @@ echo "Compiling code"
 make
 
 echo "Running test cases..."
-for i in {1..5}
+for i in {0..5}
 do
     inputFile="$INPUT_FILES_DIR/$i.in"
     outputFile="$OUTPUT_FILES_DIR/$i.out"  

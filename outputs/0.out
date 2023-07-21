@@ -1,0 +1,13 @@
+Step Allowance: 5
+Quotas: 2 1 0
+Quota multiplier 2.000000
+Coal points: [0,1] [2,4] 
+Fish points: [0,3] 
+Metal points: [2,0] 
+Map size: 3 x 5
+0    200  0    400  0    
+0    0    0    0    0    
+1000 0    0    0    200  
+SOLUTION
+[0, 0] [0, 1] [1, 1] [1, 2] [2, 2] [2, 3] [2, 4] 
+Score = 603 - Penalties = 276

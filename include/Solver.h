@@ -1,6 +1,9 @@
 #include "Node.h"
+#include "Path.h"
 #include "Point.h"
+
 #include <map>
+#include <queue>
 #include <vector>
 
 class Solver {
@@ -36,4 +39,8 @@ class Solver {
     void toString();
     void printGrid(std::vector<std::vector<int>> &grid);
     std::pair<long long, long long> calculateScore(std::vector<Node *> &path);
+    void updateNodeScores(
+        Node *currPosition,
+        std::priority_queue<Node *, std::vector<Node *>, NodeCompare> &queue);
+    Path goTo(Node *start, Node *end);
 };

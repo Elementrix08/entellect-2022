@@ -66,19 +66,104 @@ Solver::Solver() {
     }
 }
 
-class NodeCompare {
-  public:
-    bool operator()(Node *&node1, Node *&node2) {
-        return node1->score < node2->score;
-    }
-};
-
 void Solver::solve() {
-    vector<pair<int, int>> neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-    vector<vector<bool>> visited(numRows, vector<bool>(numCols, false));
-
     Node *start = new Node(0, 0, 0, stepAllowance);
     Node *end = new Node(0, numRows - 1, numCols - 1, 0);
+    Node *currPosition = new Node(0, 0, 0, stepAllowance);
+    Path finalPath;
+    finalPath.path.push_back(start);
+
+    priority_queue<Node *, vector<Node *>, NodeCompare> promisingNodes;
+
+    for (int i = 0; i < numCoal; ++i) {
+        int row = coalPoints[i].row;
+        int col = coalPoints[i].col;
+
+        Node *point = new Node(0, row, col, 0);
+        promisingNodes.push(point);
+    }
+
+    for (int i = 0; i < numFish; ++i) {
+        int row = fishPoints[i].row;
+        int col = fishPoints[i].col;
+
+        Node *point = new Node(0, row, col, 0);
+        promisingNodes.push(point);
+    }
+
+    for (int i = 0; i < numMetal; ++i) {
+        int row = metalPoints[i].row;
+        int col = metalPoints[i].col;
+
+        Node *point = new Node(0, row, col, 0);
+        promisingNodes.push(point);
+    }
+
+    updateNodeScores(currPosition, promisingNodes);
+
+    vector<vector<bool>> visited(numRows, vector<bool>(numCols, false));
+    int scoreToEnd = 0;
+
+    while (promisingNodes.size()) {
+        Node *top = promisingNodes.top();
+        promisingNodes.pop();
+
+        if (visited[top->row][top->col])
+            continue;
+
+        int nextBestScore = top->score;
+        int nextWeightedScore = top->score / currPosition->distanceTo(top);
+
+        if (currPosition->distanceTo(end) < nextWeightedScore) {
+            Path endPath = goTo(currPosition, end);
+            finalPath.addPath(endPath, visited);
+            break;
+        }
+
+        Path pathToMaterial = goTo(currPosition, top);
+        finalPath.addPath(pathToMaterial, visited);
+        currPosition->row = top->row;
+        currPosition->col = top->col;
+        currPosition->stepAllowance -= pathToMaterial.path.size();
+
+        updateNodeScores(currPosition, promisingNodes);
+    }
+
+    vector<vector<char>> path(numRows, vector<char>(numCols, '_'));
+    printf("SOLUTION\n");
+
+    for (Node *node : finalPath.path) {
+        printf("[%d, %d] ", node->row, node->col);
+        path[node->row][node->col] = '*';
+    }
+
+    auto scores = calculateScore(finalPath.path);
+
+    printf("\nScore = %lld - Penalties = %lld\n", scores.first, scores.second);
+}
+
+void Solver::updateNodeScores(
+    Node *currPosition,
+    priority_queue<Node *, vector<Node *>, NodeCompare> &queue) {
+    vector<Node *> nodes;
+
+    while (queue.size()) {
+        Node *top = queue.top();
+        queue.pop();
+
+        Path path = goTo(currPosition, top);
+        top->score = path.score;
+        nodes.emplace_back(top);
+    }
+
+    for (Node *node : nodes) {
+        queue.push(node);
+    }
+}
+
+Path Solver::goTo(Node *start, Node *end) {
+    vector<pair<int, int>> neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    vector<vector<bool>> visited(numRows, vector<bool>(numCols, false));
 
     priority_queue<Node *, vector<Node *>, NodeCompare> q;
     q.push(start);
@@ -118,28 +203,22 @@ void Solver::solve() {
 
             score += rewardMap[row][col];
             Node *nb = new Node(score, row, col, currAllowance, top);
+            nb->score -= nb->distanceTo(end);
 
             q.push(nb);
         }
     }
 
     vector<Node *> path;
+    int score = end->score;
 
     while (end != nullptr) {
         path.push_back(end);
         end = end->parent;
     }
 
-    printf("SOLUTION\n");
-    for (int i = path.size() - 1; i >= 0; --i) {
-        printf("[%d, %d] ", path[i]->row, path[i]->col);
-    }
-
     reverse(path.begin(), path.end());
-
-    auto scores = calculateScore(path);
-
-    printf("\nScore = %lld - Penalties = %lld\n", scores.first, scores.second);
+    return Path(path, score);
 }
 
 void Solver::toString() {
