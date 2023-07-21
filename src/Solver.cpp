@@ -1,4 +1,6 @@
 #include "Solver.h"
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <queue>
 
@@ -63,30 +65,6 @@ Solver::Solver() {
             cin >> map[r][c];
     }
 }
-
-struct Node;
-
-struct Node {
-    int score;
-    int stepAllowance;
-    int row, col;
-    Node *parent = nullptr;
-
-    Node() { score = 0; };
-
-    Node(int score, int row, int col, int stepAllowance,
-         Node *parent = nullptr) {
-        this->score = score;
-        this->row = row;
-        this->col = col;
-        this->parent = parent;
-        this->stepAllowance = stepAllowance;
-    }
-
-    bool operator==(const Node &other) {
-        return this->row == other.row && this->col == other.col;
-    }
-};
 
 class NodeCompare {
   public:
@@ -158,6 +136,10 @@ void Solver::solve() {
     for (int i = path.size() - 1; i >= 0; --i) {
         printf("[%d, %d] ", path[i]->row, path[i]->col);
     }
+
+    reverse(path.begin(), path.end());
+
+    printf("\nScore = %lld\n", calculateScore(path));
 }
 
 void Solver::toString() {
@@ -203,4 +185,26 @@ void Solver::printGrid(vector<vector<int>> &grid) {
 
         printf("\n");
     }
+}
+
+long long Solver::calculateScore(vector<Node *> &path) {
+    long long score = rewardMap[0][0];
+
+    for (int i = 1; i < path.size(); ++i) {
+        int row = path[i]->row;
+        int col = path[i]->col;
+        string tileDiff = map[row][col];
+
+        if (i <= stepAllowance) {
+            score += (ALLOWANCE_NUMERATOR / travelDifficulty[tileDiff]) /
+                     (erf((i - 1) / stepAllowance) + 1);
+        } else {
+            score -= (ALLOWANCE_NUMERATOR / travelDifficulty[tileDiff]) *
+                     (erf((i - 1) / stepAllowance) + 1);
+        }
+
+        score += rewardMap[row][col];
+    }
+
+    return score;
 }
