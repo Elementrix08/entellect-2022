@@ -24,6 +24,6 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -rf $(OBJ_DIR)/*.o $(EXECUTABLE) *.out
+	rm -rf $(OBJ_DIR)/*.o $(EXECUTABLE) outputs/*.out
 
 .PHONY: all clean

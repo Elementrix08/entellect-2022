@@ -1,5 +1,7 @@
 #!/bin/bash
 
+INPUT_FILES_DIR="inputs"
+OUTPUT_FILES_DIR="outputs"
 
 echo "Compiling code"
 make
@@ -7,8 +9,8 @@ make
 echo "Running test cases..."
 for i in {1..5}
 do
-    inputFile="$i.in"
-    outputFile="$i.out"  
+    inputFile="$INPUT_FILES_DIR/$i.in"
+    outputFile="$OUTPUT_FILES_DIR/$i.out"  
     ./main < $inputFile > $outputFile
 done
 
