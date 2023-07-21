@@ -111,10 +111,10 @@ void Solver::solve() {
         if (visited[top->row][top->col])
             continue;
 
-        int nextBestScore = top->score;
-        int nextWeightedScore = top->score / currPosition->distanceTo(top);
+        int nextBestScore = top->score / (currPosition->stepAllowance -
+                                          currPosition->distanceTo(top));
 
-        if (currPosition->distanceTo(end) < nextWeightedScore) {
+        if (currPosition->distanceTo(end) > nextBestScore) {
             Path endPath = goTo(currPosition, end);
             finalPath.addPath(endPath, visited);
             break;
@@ -135,6 +135,16 @@ void Solver::solve() {
     for (Node *node : finalPath.path) {
         printf("[%d, %d] ", node->row, node->col);
         path[node->row][node->col] = '*';
+    }
+
+    printf("\n");
+
+    for (int i = 0; i < numRows; ++i) {
+        for (int j = 0; j < numCols; ++j) {
+            cout << path[i][j] << " ";
+        }
+
+        cout << "\n";
     }
 
     auto scores = calculateScore(finalPath.path);
@@ -249,6 +259,17 @@ void Solver::toString() {
     printf("Map size: %d x %d\n", numRows, numCols);
 
     printGrid(rewardMap);
+
+    for (int i = 0; i < numRows; ++i) {
+        for (int j = 0; j < numCols; ++j) {
+            if (map[i][j].length() == 2)
+                cout << map[i][j] << " ";
+            else
+                cout << map[i][j] << "  ";
+        }
+
+        printf("\n");
+    }
 }
 
 void Solver::printGrid(vector<vector<int>> &grid) {
