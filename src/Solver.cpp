@@ -154,18 +154,9 @@ void Solver::solve() {
         end = end->parent;
     }
 
+    printf("SOLUTION\n");
     for (int i = path.size() - 1; i >= 0; --i) {
         printf("[%d, %d] ", path[i]->row, path[i]->col);
-    }
-
-    printf("\n");
-    printf("COST MAP\n");
-    for (int i = 0; i < numRows; ++i) {
-        for (int j = 0; j < numCols; ++j) {
-            cout << cost[i][j] << " ";
-        }
-
-        printf("\n");
     }
 }
 
