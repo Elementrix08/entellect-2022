@@ -35,5 +35,5 @@ class Solver {
     void solve();
     void toString();
     void printGrid(std::vector<std::vector<int>> &grid);
-    long long calculateScore(std::vector<Node *> &path);
+    std::pair<long long, long long> calculateScore(std::vector<Node *> &path);
 };

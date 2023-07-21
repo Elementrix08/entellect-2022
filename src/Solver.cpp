@@ -16,19 +16,19 @@ Solver::Solver() {
     coalPoints = vector<Point>(numCoal);
 
     for (int i = 0; i < numCoal; ++i)
-        cin >> coalPoints[i].x >> coalPoints[i].y;
+        cin >> coalPoints[i].row >> coalPoints[i].col;
 
     cin >> numFish;
     fishPoints = vector<Point>(numFish);
 
     for (int i = 0; i < numFish; ++i)
-        cin >> fishPoints[i].x >> fishPoints[i].y;
+        cin >> fishPoints[i].row >> fishPoints[i].col;
 
     cin >> numMetal;
     metalPoints = vector<Point>(numMetal);
 
     for (int i = 0; i < numMetal; ++i)
-        cin >> metalPoints[i].x >> metalPoints[i].y;
+        cin >> metalPoints[i].row >> metalPoints[i].col;
 
     for (int i = 0; i < NUM_RESOURCES; ++i)
         cin >> quotaAmounts[i];
@@ -40,24 +40,24 @@ Solver::Solver() {
     rewardMap = vector<vector<int>>(numRows, vector<int>(numCols));
 
     for (int i = 0; i < numCoal; ++i) {
-        int x = coalPoints[i].x;
-        int y = coalPoints[i].y;
+        int row = coalPoints[i].row;
+        int col = coalPoints[i].col;
 
-        rewardMap[x][y] = COAL_REWARD;
+        rewardMap[row][col] = COAL_REWARD;
     }
 
     for (int i = 0; i < numFish; ++i) {
-        int x = fishPoints[i].x;
-        int y = fishPoints[i].y;
+        int row = fishPoints[i].row;
+        int col = fishPoints[i].col;
 
-        rewardMap[x][y] = FISH_REWARD;
+        rewardMap[row][col] = FISH_REWARD;
     }
 
     for (int i = 0; i < numMetal; ++i) {
-        int x = metalPoints[i].x;
-        int y = metalPoints[i].y;
+        int row = metalPoints[i].row;
+        int col = metalPoints[i].col;
 
-        rewardMap[x][y] = METAL_REWARD;
+        rewardMap[row][col] = METAL_REWARD;
     }
 
     for (int r = 0; r < numRows; ++r) {
@@ -76,7 +76,6 @@ class NodeCompare {
 void Solver::solve() {
     vector<pair<int, int>> neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
     vector<vector<bool>> visited(numRows, vector<bool>(numCols, false));
-    vector<vector<int>> cost(numRows, vector<int>(numCols, 0));
 
     Node *start = new Node(0, 0, 0, stepAllowance);
     Node *end = new Node(0, numRows - 1, numCols - 1, 0);
@@ -119,7 +118,6 @@ void Solver::solve() {
 
             score += rewardMap[row][col];
             Node *nb = new Node(score, row, col, currAllowance, top);
-            cost[row][col] = max(cost[row][col], score);
 
             q.push(nb);
         }
@@ -139,7 +137,9 @@ void Solver::solve() {
 
     reverse(path.begin(), path.end());
 
-    printf("\nScore = %lld\n", calculateScore(path));
+    auto scores = calculateScore(path);
+
+    printf("\nScore = %lld - Penalties = %lld\n", scores.first, scores.second);
 }
 
 void Solver::toString() {
@@ -187,8 +187,26 @@ void Solver::printGrid(vector<vector<int>> &grid) {
     }
 }
 
-long long Solver::calculateScore(vector<Node *> &path) {
-    long long score = rewardMap[0][0];
+pair<long long, long long> Solver::calculateScore(vector<Node *> &path) {
+    vector<vector<int>> materialRewards(numRows, vector<int>(numCols, 0));
+
+    for (int i = 0; i < numCoal; ++i) {
+        int row = coalPoints[i].row, col = coalPoints[i].col;
+        materialRewards[row][col] = COAL_REWARD;
+    }
+
+    for (int i = 0; i < numFish; ++i) {
+        int row = fishPoints[i].row, col = fishPoints[i].col;
+        materialRewards[row][col] = FISH_REWARD;
+    }
+
+    for (int i = 0; i < numMetal; ++i) {
+        int row = metalPoints[i].row, col = metalPoints[i].col;
+        materialRewards[row][col] = METAL_REWARD;
+    }
+
+    long long score = materialRewards[0][0];
+    long long penalties = 0;
 
     for (int i = 1; i < path.size(); ++i) {
         int row = path[i]->row;
@@ -201,10 +219,12 @@ long long Solver::calculateScore(vector<Node *> &path) {
         } else {
             score -= (ALLOWANCE_NUMERATOR / travelDifficulty[tileDiff]) *
                      (erf((i - 1) / stepAllowance) + 1);
+            penalties += (ALLOWANCE_NUMERATOR / travelDifficulty[tileDiff]) *
+                         (erf((i - 1) / stepAllowance) + 1);
         }
 
-        score += rewardMap[row][col];
+        score += materialRewards[row][col];
     }
 
-    return score;
+    return {score, penalties};
 }
