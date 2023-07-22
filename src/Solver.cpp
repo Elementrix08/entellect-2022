@@ -111,8 +111,10 @@ void Solver::solve() {
         if (visited[top->row][top->col])
             continue;
 
-        int nextBestScore = top->score / (currPosition->stepAllowance -
-                                          currPosition->distanceTo(top));
+        int denominator =
+            currPosition->stepAllowance - currPosition->distanceTo(top);
+        denominator = (denominator == 0 ? 1 : denominator);
+        int nextBestScore = top->score / denominator;
 
         if (currPosition->distanceTo(end) > nextBestScore) {
             Path endPath = goTo(currPosition, end);
@@ -286,12 +288,20 @@ void Solver::toString() {
 void Solver::printGrid(vector<vector<int>> &grid) {
     for (int i = 0; i < numRows; ++i) {
         for (int j = 0; j < numCols; ++j) {
-            if (grid[i][j] > 0 && grid[i][j] <= 400)
-                cout << grid[i][j] << "  ";
-            else if (rewardMap[i][j] == 1000)
-                cout << grid[i][j] << " ";
-            else
-                cout << grid[i][j] << "    ";
+            switch (grid[i][j]) {
+            case FISH_REWARD:
+                cout << "F  ";
+                break;
+            case METAL_REWARD:
+                cout << "M  ";
+                break;
+            case COAL_REWARD:
+                cout << "C  ";
+                break;
+            default:
+                cout << "_  ";
+                break;
+            }
         }
 
         printf("\n");

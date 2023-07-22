@@ -5,9 +5,9 @@ Coal points: [0,1] [2,4]
 Fish points: [0,3] 
 Metal points: [2,0] 
 Map size: 3 x 5
-0    200  0    400  0    
-0    0    0    0    0    
-1000 0    0    0    200  
+_  C  _  F  _  
+_  _  _  _  _  
+M  _  _  _  C  
 S  S  I  I  I  
 S  S  TS TS M  
 S  M  TS S  S  
