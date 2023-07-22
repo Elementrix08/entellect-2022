@@ -117,6 +117,8 @@ void Solver::solve() {
         if (currPosition->distanceTo(end) > nextBestScore) {
             Path endPath = goTo(currPosition, end);
             finalPath.addPath(endPath, visited);
+            currPosition->row = end->row;
+            currPosition->col = end->col;
             break;
         }
 
@@ -127,6 +129,11 @@ void Solver::solve() {
         currPosition->stepAllowance -= pathToMaterial.path.size();
 
         updateNodeScores(currPosition, promisingNodes);
+    }
+
+    if (*currPosition != *end) {
+        Path endPath = goTo(currPosition, end);
+        finalPath.addPath(endPath, visited);
     }
 
     vector<vector<char>> path(numRows, vector<char>(numCols, '_'));
@@ -141,7 +148,7 @@ void Solver::solve() {
 
     for (int i = 0; i < numRows; ++i) {
         for (int j = 0; j < numCols; ++j) {
-            cout << path[i][j] << " ";
+            cout << path[i][j] << "  ";
         }
 
         cout << "\n";
@@ -156,6 +163,8 @@ void Solver::updateNodeScores(
     Node *currPosition,
     priority_queue<Node *, vector<Node *>, NodeCompare> &queue) {
     vector<Node *> nodes;
+
+    Node *end = new Node(0, numRows - 1, numCols - 1, 0);
 
     while (queue.size()) {
         Node *top = queue.top();
@@ -177,6 +186,7 @@ Path Solver::goTo(Node *start, Node *end) {
 
     priority_queue<Node *, vector<Node *>, NodeCompare> q;
     q.push(start);
+    int pathAllowance = (start->stepAllowance == 0 ? 1 : start->stepAllowance);
 
     while (q.size()) {
         Node *top = q.top();
@@ -205,9 +215,10 @@ Path Solver::goTo(Node *start, Node *end) {
 
             int score = top->score;
             int currAllowance = top->stepAllowance - 1;
+            int step = pathAllowance - currAllowance;
 
             if (currAllowance < 0)
-                score -= ALLOWANCE_NUMERATOR / travelDifficulty[type];
+                score -= (ALLOWANCE_NUMERATOR / travelDifficulty[type]);
             else
                 score += ALLOWANCE_NUMERATOR / travelDifficulty[type];
 

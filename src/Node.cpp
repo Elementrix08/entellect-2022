@@ -16,7 +16,7 @@ int Node::distanceTo(const Node *other) {
 }
 
 bool Node::operator!=(const Node &other) {
-    return this->row != other.row && this->col != other.col;
+    return this->row != other.row || this->col != other.col;
 }
 
 bool Node::operator==(const Node &other) {
