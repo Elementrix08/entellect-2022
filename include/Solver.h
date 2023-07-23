@@ -41,8 +41,5 @@ class Solver {
     void printGrid(std::vector<std::vector<int>> &grid);
     void propogateReward(Node *reward);
     std::pair<long long, long long> calculateScore(std::vector<Node *> &path);
-    void updateNodeScores(
-        Node *currPosition,
-        std::priority_queue<Node *, std::vector<Node *>, NodeCompare> &queue);
     Path goTo(Node *start, Node *end);
 };

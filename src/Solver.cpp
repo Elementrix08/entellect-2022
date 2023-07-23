@@ -67,7 +67,7 @@ Solver::Solver() {
 }
 
 void Solver::propogateReward(Node *reward) {
-    const int REWARD_PROPOGATE_RADIUS = 2;
+    const int REWARD_PROPOGATE_RADIUS = 0;
 
     vector<vector<bool>> visited(numRows, vector<bool>(numCols));
     queue<Node *> q;
@@ -103,11 +103,13 @@ void Solver::propogateReward(Node *reward) {
 
                 int score = top->score;
 
+                if (radius != 0) {
+                    score = (score - radius) / radius;
+                }
+
                 Node *nb = new Node(score, row, col, 0, top);
 
-                rewardMap[row][col] =
-                    max(rewardMap[row][col],
-                        (score - radius) / reward->distanceTo(nb));
+                rewardMap[row][col] = max(rewardMap[row][col], score);
                 q.push(nb);
                 ++nextCount;
             }
@@ -120,10 +122,17 @@ void Solver::propogateReward(Node *reward) {
 }
 
 void Solver::solve() {
+    Path finalPath;
     Node *start = new Node(0, 0, 0, stepAllowance);
+    finalPath.path.emplace_back(start);
+
+    vector<Node *> checkPoints = {
+        new Node(0, 11, 8, 0),
+        new Node(0, 3, 15, 0),
+    };
+
     Node *end = new Node(0, numRows - 1, numCols - 1, 0);
     Node *currPosition = new Node(0, 0, 0, stepAllowance);
-    Path finalPath;
 
     for (int i = 0; i < numCoal; ++i) {
         int row = coalPoints[i].row;
@@ -149,19 +158,26 @@ void Solver::solve() {
         propogateReward(point);
     }
 
-    vector<vector<bool>> visited(numRows, vector<bool>(numCols, false));
+    for (Node *point : checkPoints) {
+        Path currPath = goTo(currPosition, point);
+        int size = currPath.path.size();
 
-    if (*currPosition != *end) {
-        Path endPath = goTo(currPosition, end);
-        finalPath.addPath(endPath);
+        finalPath.addPath(currPath);
+        currPosition->row = point->row;
+        currPosition->col = point->col;
+        currPosition->stepAllowance -= size;
     }
+
+    Path endPath = goTo(currPosition, end);
+    finalPath.addPath(endPath);
 
     vector<vector<char>> path(numRows, vector<char>(numCols, '_'));
     printf("SOLUTION\n");
 
+    int count = 0;
     for (Node *node : finalPath.path) {
         printf("[%d, %d] ", node->row, node->col);
-        path[node->row][node->col] = '*';
+        path[node->row][node->col] = (char)('0' + count++);
     }
 
     printf("\n");
@@ -181,36 +197,9 @@ void Solver::solve() {
     printGrid(rewardMap);
 }
 
-void Solver::updateNodeScores(
-    Node *currPosition,
-    priority_queue<Node *, vector<Node *>, NodeCompare> &queue) {
-    vector<Node *> nodes;
-    Node *end = new Node(0, numRows - 1, numCols - 1, 0);
-
-    for (int i = 0; i < numRows; ++i) {
-        for (int j = 0; j < numCols; ++j) {
-            rewardMap[i][j] = 0;
-        }
-    }
-
-    while (queue.size()) {
-        Node *top = queue.top();
-        queue.pop();
-
-        Path path = goTo(currPosition, top);
-        top->score = path.score;
-        nodes.emplace_back(top);
-    }
-
-    for (Node *node : nodes) {
-        propogateReward(node);
-        queue.push(node);
-    }
-}
-
 Path Solver::goTo(Node *start, Node *end) {
+    Node *bottomRightEdge = new Node(0, numRows - 1, numCols - 1, 0);
     vector<vector<bool>> visited(numRows, vector<bool>(numCols, false));
-
     priority_queue<Node *, vector<Node *>, NodeCompare> q;
     q.push(start);
     int pathAllowance = (start->stepAllowance == 0 ? 1 : start->stepAllowance);
@@ -224,6 +213,8 @@ Path Solver::goTo(Node *start, Node *end) {
                 end->score = top->score;
                 end->parent = top->parent;
             }
+
+            break;
         }
 
         for (auto neighbor : neighbors) {
@@ -240,14 +231,18 @@ Path Solver::goTo(Node *start, Node *end) {
 
             string type = map[row][col];
 
+            int currStep = start->stepAllowance - top->stepAllowance;
             int score = top->score;
             int currAllowance = top->stepAllowance - 1;
-            int step = pathAllowance - currAllowance;
 
             if (currAllowance < 0)
-                score -= (ALLOWANCE_NUMERATOR / travelDifficulty[type]);
+                score -= (ALLOWANCE_NUMERATOR / travelDifficulty[type]) *
+                         (erf((currStep - start->stepAllowance) /
+                              start->stepAllowance) +
+                          1);
             else
-                score += ALLOWANCE_NUMERATOR / travelDifficulty[type];
+                score += (ALLOWANCE_NUMERATOR / travelDifficulty[type]) /
+                         (erf(currStep / start->stepAllowance) + 1);
 
             score += rewardMap[row][col];
             Node *nb = new Node(score, row, col, currAllowance, top);
@@ -354,6 +349,7 @@ pair<long long, long long> Solver::calculateScore(vector<Node *> &path) {
 
     long long score = materialRewards[0][0];
     long long penalties = 0;
+    long long numCollected = 0;
 
     for (int i = 1; i < path.size(); ++i) {
         int row = path[i]->row;
@@ -365,13 +361,20 @@ pair<long long, long long> Solver::calculateScore(vector<Node *> &path) {
                      (erf((i - 1) / stepAllowance) + 1);
         } else {
             score -= (ALLOWANCE_NUMERATOR / travelDifficulty[tileDiff]) *
-                     (erf((i - 1) / stepAllowance) + 1);
+                     (erf((i - stepAllowance) / stepAllowance) + 1);
             penalties += (ALLOWANCE_NUMERATOR / travelDifficulty[tileDiff]) *
-                         (erf((i - 1) / stepAllowance) + 1);
+                         (erf((i - stepAllowance) / stepAllowance) + 1);
         }
 
         score += materialRewards[row][col];
+
+        if (materialRewards[row][col] != 0)
+            ++numCollected;
+
+        materialRewards[row][col] = 0;
     }
+
+    printf("Materials collected: %lld\n", numCollected);
 
     return {score, penalties};
 }
