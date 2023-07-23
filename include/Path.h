@@ -8,5 +8,5 @@ class Path {
 
     Path();
     Path(std::vector<Node *> &path, int score);
-    void addPath(Path &other, std::vector<std::vector<bool>> &visited);
+    void addPath(Path &other);
 };

@@ -66,76 +66,94 @@ Solver::Solver() {
     }
 }
 
+void Solver::propogateReward(Node *reward) {
+    const int REWARD_PROPOGATE_RADIUS = 2;
+
+    vector<vector<bool>> visited(numRows, vector<bool>(numCols));
+    queue<Node *> q;
+    visited[reward->row][reward->col] = true;
+    q.push(reward);
+
+    int radius = 0;
+    int currCount = 1, nextCount = 0;
+
+    while (q.size()) {
+        if (radius == REWARD_PROPOGATE_RADIUS) {
+            return;
+        }
+
+        for (int i = 0; i < currCount; ++i) {
+            Node *top = q.front();
+            q.pop();
+
+            for (auto neighbor : neighbors) {
+                int row = top->row + neighbor.first;
+                int col = top->col + neighbor.second;
+
+                if (row < 0 || row > numRows - 1 || col < 0 ||
+                    col > numCols - 1)
+                    continue;
+
+                if (visited[row][col])
+                    continue;
+
+                visited[row][col] = true;
+
+                string type = map[row][col];
+
+                int score = top->score;
+
+                Node *nb = new Node(score, row, col, 0, top);
+
+                rewardMap[row][col] =
+                    max(rewardMap[row][col],
+                        (score - radius) / reward->distanceTo(nb));
+                q.push(nb);
+                ++nextCount;
+            }
+        }
+
+        currCount = nextCount;
+        nextCount = 0;
+        ++radius;
+    }
+}
+
 void Solver::solve() {
     Node *start = new Node(0, 0, 0, stepAllowance);
     Node *end = new Node(0, numRows - 1, numCols - 1, 0);
     Node *currPosition = new Node(0, 0, 0, stepAllowance);
     Path finalPath;
-    finalPath.path.push_back(start);
-
-    priority_queue<Node *, vector<Node *>, NodeCompare> promisingNodes;
 
     for (int i = 0; i < numCoal; ++i) {
         int row = coalPoints[i].row;
         int col = coalPoints[i].col;
 
-        Node *point = new Node(0, row, col, 0);
-        promisingNodes.push(point);
+        Node *point = new Node(COAL_REWARD, row, col, 0);
+        propogateReward(point);
     }
 
     for (int i = 0; i < numFish; ++i) {
         int row = fishPoints[i].row;
         int col = fishPoints[i].col;
 
-        Node *point = new Node(0, row, col, 0);
-        promisingNodes.push(point);
+        Node *point = new Node(FISH_REWARD, row, col, 0);
+        propogateReward(point);
     }
 
     for (int i = 0; i < numMetal; ++i) {
         int row = metalPoints[i].row;
         int col = metalPoints[i].col;
 
-        Node *point = new Node(0, row, col, 0);
-        promisingNodes.push(point);
+        Node *point = new Node(METAL_REWARD, row, col, 0);
+        propogateReward(point);
     }
-
-    updateNodeScores(currPosition, promisingNodes);
 
     vector<vector<bool>> visited(numRows, vector<bool>(numCols, false));
-    int scoreToEnd = 0;
-
-    while (promisingNodes.size()) {
-        Node *top = promisingNodes.top();
-        promisingNodes.pop();
-
-        if (visited[top->row][top->col])
-            continue;
-
-        int denominator =
-            currPosition->stepAllowance - currPosition->distanceTo(top);
-        denominator = (denominator == 0 ? 1 : denominator);
-        int nextBestScore = top->score / denominator;
-
-        if (currPosition->distanceTo(end) > nextBestScore) {
-            Path endPath = goTo(currPosition, end);
-            finalPath.addPath(endPath, visited);
-            currPosition->row = end->row;
-            currPosition->col = end->col;
-            break;
-        }
-
-        Path pathToMaterial = goTo(currPosition, top);
-        finalPath.addPath(pathToMaterial, visited);
-        currPosition->row = top->row;
-        currPosition->col = top->col;
-        currPosition->stepAllowance -= pathToMaterial.path.size();
-
-        updateNodeScores(currPosition, promisingNodes);
-    }
 
     if (*currPosition != *end) {
         Path endPath = goTo(currPosition, end);
-        finalPath.addPath(endPath, visited);
+        finalPath.addPath(endPath);
     }
 
     vector<vector<char>> path(numRows, vector<char>(numCols, '_'));
@@ -159,14 +177,21 @@ void Solver::solve() {
     auto scores = calculateScore(finalPath.path);
 
     printf("\nScore = %lld - Penalties = %lld\n", scores.first, scores.second);
+
+    printGrid(rewardMap);
 }
 
 void Solver::updateNodeScores(
     Node *currPosition,
     priority_queue<Node *, vector<Node *>, NodeCompare> &queue) {
     vector<Node *> nodes;
-
     Node *end = new Node(0, numRows - 1, numCols - 1, 0);
+
+    for (int i = 0; i < numRows; ++i) {
+        for (int j = 0; j < numCols; ++j) {
+            rewardMap[i][j] = 0;
+        }
+    }
 
     while (queue.size()) {
         Node *top = queue.top();
@@ -178,12 +203,12 @@ void Solver::updateNodeScores(
     }
 
     for (Node *node : nodes) {
+        propogateReward(node);
         queue.push(node);
     }
 }
 
 Path Solver::goTo(Node *start, Node *end) {
-    vector<pair<int, int>> neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
     vector<vector<bool>> visited(numRows, vector<bool>(numCols, false));
 
     priority_queue<Node *, vector<Node *>, NodeCompare> q;
@@ -288,20 +313,21 @@ void Solver::toString() {
 void Solver::printGrid(vector<vector<int>> &grid) {
     for (int i = 0; i < numRows; ++i) {
         for (int j = 0; j < numCols; ++j) {
-            switch (grid[i][j]) {
-            case FISH_REWARD:
-                cout << "F  ";
-                break;
-            case METAL_REWARD:
-                cout << "M  ";
-                break;
-            case COAL_REWARD:
-                cout << "C  ";
-                break;
-            default:
-                cout << "_  ";
-                break;
-            }
+            cout << grid[i][j] << " ";
+            // switch (grid[i][j]) {
+            // case FISH_REWARD:
+            //     cout << "F  ";
+            //     break;
+            // case METAL_REWARD:
+            //     cout << "M  ";
+            //     break;
+            // case COAL_REWARD:
+            //     cout << "C  ";
+            //     break;
+            // default:
+            //     cout << "_  ";
+            //     break;
+            // }
         }
 
         printf("\n");

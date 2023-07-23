@@ -13,8 +13,9 @@ class Solver {
     const static int FISH_REWARD = 400;
     const static int METAL_REWARD = 1000;
     const static int ALLOWANCE_NUMERATOR = 150;
-
     static std::map<std::string, int> travelDifficulty;
+    const std::vector<std::pair<int, int>> neighbors = {
+        {-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
   public:
     int stepAllowance;
@@ -38,6 +39,7 @@ class Solver {
     void solve();
     void toString();
     void printGrid(std::vector<std::vector<int>> &grid);
+    void propogateReward(Node *reward);
     std::pair<long long, long long> calculateScore(std::vector<Node *> &path);
     void updateNodeScores(
         Node *currPosition,
